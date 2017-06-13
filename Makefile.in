@@ -1,0 +1,94 @@
+# 
+# Copyright (C) 1996-2004,2013 LAAS/CNRS
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 
+#    - Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#    - Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials provided
+#      with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# $LAAS$
+#
+# Makefile pour la librairie gb
+#
+top_srcdir=	@top_srcdir@
+include		Init.make
+
+DISTNAME= @PACKAGE@-@VERSION@
+
+INSTALL=	@INSTALL@
+
+SHELL = @SHELL@
+
+SUBDIRS= src
+ifeq (@GB_TCL@, yes)
+SUBDIRS+= tclsrc tcl
+endif
+
+MAKE_SUBDIRS= @for d in $(SUBDIRS); do $(MAKE) -C $$d $@ || exit 2; done
+
+all: Makefile
+	$(MAKE_SUBDIRS)
+
+depend:
+	$(MAKE_SUBDIRS)
+
+install:: gbM.pc
+	@echo LIBTOOL= $(LIBTOOL)
+	$(MKINSTALLDIRS) $(LIBDIR)/pkgconfig
+	$(INSTALL) -m 664 gbM.pc $(PKGCONFIGDIR)
+	$(MAKE_SUBDIRS)
+
+distclean: clean
+	rm -f  TAGS Makefile gbM.pc
+	$(MAKE_SUBDIRS)
+
+clean:
+	$(MAKE_SUBDIRS)
+
+reconf:
+	cd $(top_srcdir); aclocal -I .; autoconf; libtoolize --force
+	./config.status --recheck
+	./config.status
+
+EXTRA_DIST=\
+	aclocal.m4		\
+	configure		\
+	m4/config.guess		\
+	m4/config.sub		\
+	m4/install-sh		\
+	m4/ltmain.sh		\
+	m4/ltoptions.m4		\
+	m4/ltsugar.m4		\
+	m4/ltversion.m4		\
+	m4/lt~obsolete.m4
+
+dist:
+	rm -rf @PACKAGE_NAME@-@PACKAGE_VERSION@
+	mkdir -p @PACKAGE_NAME@-@PACKAGE_VERSION@
+	( cd ${top_srcdir};						\
+	  {  git ls-tree -r --name-only HEAD;				\
+	  for e in ${EXTRA_DIST}; do echo $$e; done; }			\
+	  | pax -w ) | ( cd @PACKAGE_NAME@-@PACKAGE_VERSION@; pax -v -r  )
+	pax -z -w @PACKAGE_NAME@-@PACKAGE_VERSION@			\
+	  >@PACKAGE_NAME@-@PACKAGE_VERSION@.tar.gz
+	rm -rf @PACKAGE_NAME@-@PACKAGE_VERSION@
